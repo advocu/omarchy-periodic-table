@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.advocatus.periodic-table",
+  "name": "Periodic Table",
+  "version": "1.0.0",
+  "author": "Suyash Verma",
+  "license": "MIT",
+  "description": "Interactive educational periodic table bar widget with hover/keyboard element inspector, valence electron visualizer, and expandable deep-chemistry drawer.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Periodic Table",
+    "category": "Education",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
