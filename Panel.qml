@@ -264,7 +264,7 @@ Panel {
                 }
 
                 // Optional Temperature Phase Presets Bar
-                Row {
+                Flow {
                     visible: root.showTempBar
                     width: parent.width
                     spacing: Style.space(6)
@@ -313,7 +313,7 @@ Panel {
                 }
 
                 // Category Filter Chips Row
-                Row {
+                Flow {
                     width: parent.width
                     spacing: Style.space(4)
 
