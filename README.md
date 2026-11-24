@@ -1,10 +1,3 @@
-<!--
-DRAFT NOTE (Wright, 24 Nov 2026, remove before publishing):
-The plugin id io.github.advocu.periodic-table and the repo URL
-github.com/advocu/omarchy-periodic-table are proposed, not confirmed.
-Suyash has not confirmed them yet. Plugin ids are permanent once listed.
--->
-
 # Periodic Table for Omarchy
 
 A periodic table that lives in the Omarchy top bar. Click the `⚛ Pt` button to open it. Point at an element, or move to it with the keyboard, and the card under the grid shows its details. **More Details** opens that element's properties and an animated Bohr shell diagram.
