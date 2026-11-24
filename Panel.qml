@@ -849,12 +849,6 @@ Ac-Lr"
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Crystal Lattice: " + root.fmt(root.currentElement.crystal)
-                                            color: "#93C5FD"
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
                                             text: "• Bohr Shells (K..Q): " + root.shellsText(root.currentElement, " · ")
                                             color: "#93C5FD"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
