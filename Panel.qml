@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "ElementsData.js" as ElementsDB
 
@@ -10,6 +11,14 @@ Panel {
 
     property var anchorItem: null
     property var hostWidget: null
+
+    // Theme colours: text matches the header (bar foreground), surfaces use the
+    // shell's own state fills, so cards keep their contrast on light themes.
+    // Family/heatmap colours stay fixed because they encode data.
+    readonly property color textColor: root.barForeground
+    readonly property color mutedText: Commons.Color.muted
+    readonly property color accentColor: Commons.Color.accent
+    readonly property color warnColor: Commons.Color.warning
 
     // UI State
     property int currentZ: 6
@@ -70,7 +79,7 @@ Panel {
 
     // Heatmap scales come from the elements that have a value; missing values
     // are excluded from min/max and drawn in the no-data grey.
-    readonly property color noDataColor: "#475569"
+    readonly property color noDataColor: Commons.Color.muted
 
     function fieldRange(key) {
         var lo = Infinity, hi = -Infinity
@@ -205,9 +214,9 @@ Panel {
                         height: Style.space(24)
                         width: heatmapText.implicitWidth + Style.space(16)
                         radius: Style.space(4)
-                        color: Qt.rgba(0.12, 0.25, 0.55, 0.45)
+                        color: Style.normalFill
                         border.width: 1
-                        border.color: "#3B82F6"
+                        border.color: root.accentColor
 
                         Text {
                             id: heatmapText
@@ -233,9 +242,9 @@ Panel {
                         height: Style.space(24)
                         width: tempToggleText.implicitWidth + Style.space(16)
                         radius: Style.space(4)
-                        color: root.showTempBar ? Qt.rgba(0.06, 0.46, 0.43, 0.55) : Qt.rgba(0.2, 0.25, 0.33, 0.35)
+                        color: root.showTempBar ? Style.selectedFill : Style.normalFill
                         border.width: 1
-                        border.color: root.showTempBar ? "#14B8A6" : "#475569"
+                        border.color: root.showTempBar ? root.accentColor : Style.normalBorderColor
 
                         Text {
                             id: tempToggleText
@@ -281,9 +290,9 @@ Panel {
                             height: Style.space(22)
                             width: presetLbl.implicitWidth + Style.space(12)
                             radius: Style.space(3)
-                            color: root.tempKelvin === modelData.k ? "#0F766E" : Qt.rgba(0.15, 0.2, 0.28, 0.45)
+                            color: root.tempKelvin === modelData.k ? Style.selectedFill : Style.normalFill
                             border.width: 1
-                            border.color: root.tempKelvin === modelData.k ? "#2DD4BF" : "#475569"
+                            border.color: root.tempKelvin === modelData.k ? root.accentColor : Style.normalBorderColor
 
                             Text {
                                 id: presetLbl
@@ -312,7 +321,7 @@ Panel {
                         height: Style.space(20)
                         width: allCatTxt.implicitWidth + Style.space(10)
                         radius: Style.space(3)
-                        color: root.activeCategoryFilter === "" ? "#1D4ED8" : Qt.rgba(0.2, 0.25, 0.33, 0.35)
+                        color: root.activeCategoryFilter === "" ? Style.selectedFill : Style.normalFill
 
                         Text {
                             id: allCatTxt
@@ -341,7 +350,7 @@ Panel {
                             height: Style.space(20)
                             width: catChipTxt.implicitWidth + Style.space(10)
                             radius: Style.space(3)
-                            color: root.activeCategoryFilter === modelData ? meta.color : Qt.rgba(0.15, 0.2, 0.28, 0.4)
+                            color: root.activeCategoryFilter === modelData ? Style.selectedFill : Style.normalFill
                             border.width: 1
                             border.color: meta.color
 
@@ -398,9 +407,9 @@ Panel {
                                 opacity: parent.isMatched ? 1.0 : 0.22
                                 color: parent.isFocused
                                        ? root.tileAccentColor(parent.el)
-                                       : Qt.rgba(0.09, 0.13, 0.2, 0.85)
+                                       : Style.normalFill
                                 border.width: parent.isFocused ? 2 : 1
-                                border.color: parent.isFocused ? "#FACC15" : root.tileAccentColor(parent.el)
+                                border.color: parent.isFocused ? root.warnColor : root.tileAccentColor(parent.el)
 
                                 // Top row: Atomic Number (left) and Valence Count (right)
                                 Text {
@@ -408,7 +417,7 @@ Panel {
                                     anchors.left: parent.left
                                     anchors.margins: 2
                                     text: parent.parent.hasElement ? String(parent.parent.el.z) : ""
-                                    color: parent.parent.isFocused ? "#FFFFFF" : "#94A3B8"
+                                    color: parent.parent.isFocused ? "#FFFFFF" : root.mutedText
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 8
                                 }
@@ -418,7 +427,7 @@ Panel {
                                     anchors.right: parent.right
                                     anchors.margins: 2
                                     text: parent.parent.hasElement && root.hasValue(parent.parent.el.valence) ? (parent.parent.el.valence + "e⁻") : ""
-                                    color: parent.parent.isFocused ? "#FEF08A" : "#38BDF8"
+                                    color: parent.parent.isFocused ? "#FEF08A" : root.accentColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 8
                                 }
@@ -430,7 +439,7 @@ Panel {
                                     text: parent.parent.hasElement
                                           ? parent.parent.el.symbol
                                           : ""
-                                    color: "#FFFFFF"
+                                    color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 13
                                     font.bold: true
@@ -447,7 +456,7 @@ Panel {
                                     text: parent.parent.hasElement
                                           ? parent.parent.el.name
                                           : ""
-                                    color: parent.parent.isFocused ? "#FFFFFF" : "#CBD5E1"
+                                    color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 7
                                 }
@@ -483,7 +492,7 @@ Panel {
 La-Lu" : "89-103
 Ac-Lr"
                                 horizontalAlignment: Text.AlignHCenter
-                                color: "#94A3B8"
+                                color: root.mutedText
                                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                 font.pixelSize: 8
                             }
@@ -500,7 +509,7 @@ Ac-Lr"
                     width: parent.width
                     height: cardCol.implicitHeight + Style.space(20)
                     radius: Style.space(6)
-                    color: Qt.rgba(0.06, 0.09, 0.16, 0.92)
+                    color: Style.normalFill
                     border.width: 1.5
                     border.color: root.currentCatMeta.color
 
@@ -562,7 +571,7 @@ Ac-Lr"
 
                                     Text {
                                         text: root.currentElement.name + " (" + root.currentElement.symbol + ")"
-                                        color: "#FFFFFF"
+                                        color: root.textColor
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 18
                                         font.bold: true
@@ -572,15 +581,15 @@ Ac-Lr"
                                         height: 22
                                         width: valBadgeTxt.implicitWidth + 14
                                         radius: 4
-                                        color: "#1E3A8A"
+                                        color: Style.selectedFill
                                         border.width: 1
-                                        border.color: "#60A5FA"
+                                        border.color: root.accentColor
 
                                         Text {
                                             id: valBadgeTxt
                                             anchors.centerIn: parent
                                             text: "Valence Electrons: " + root.fmt(root.currentElement.valence, "e⁻")
-                                            color: "#FEF08A"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 11
                                             font.bold: true
@@ -591,7 +600,7 @@ Ac-Lr"
                                         height: 22
                                         width: catBadgeTxt.implicitWidth + 12
                                         radius: 4
-                                        color: Qt.rgba(0.15, 0.2, 0.3, 0.7)
+                                        color: Style.normalFill
                                         border.width: 1
                                         border.color: root.currentCatMeta.color
 
@@ -599,7 +608,7 @@ Ac-Lr"
                                             id: catBadgeTxt
                                             anchors.centerIn: parent
                                             text: root.currentCatMeta.label + " · " + root.currentElement.block + "-block"
-                                            color: "#E2E8F0"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 11
                                         }
@@ -612,7 +621,7 @@ Ac-Lr"
                                           "   |   Config: " + root.fmt(root.currentElement.config) +
                                           "   |   Shells: " + root.shellsText(root.currentElement, ", ") +
                                           "   |   Period " + root.currentElement.period + ", Group " + root.currentElement.group
-                                    color: "#93C5FD"
+                                    color: root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 12
                                     wrapMode: Text.WordWrap
@@ -625,7 +634,7 @@ Ac-Lr"
                                     readonly property bool unknown: phase === "Unknown"
                                     width: parent.width
                                     text: "State @ " + root.tempKelvin + " K: " + (unknown ? "Unknown (no melting/boiling data)" : phase)
-                                    color: unknown ? "#FBBF24" : "#93C5FD"
+                                    color: unknown ? root.warnColor : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 12
                                     font.italic: unknown
@@ -636,7 +645,7 @@ Ac-Lr"
                                     width: parent.width
                                     visible: root.hasValue(root.currentElement.summary)
                                     text: root.hasValue(root.currentElement.summary) ? root.currentElement.summary : ""
-                                    color: "#E2E8F0"
+                                    color: root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 12
                                     wrapMode: Text.WordWrap
@@ -652,9 +661,9 @@ Ac-Lr"
                             width: parent.width
                             height: deepDrawerRow.implicitHeight + Style.space(18)
                             radius: Style.space(5)
-                            color: Qt.rgba(0.03, 0.06, 0.11, 0.96)
+                            color: Style.normalFill
                             border.width: 1
-                            border.color: "#0F766E"
+                            border.color: root.accentColor
 
                             Row {
                                 id: deepDrawerRow
@@ -673,14 +682,17 @@ Ac-Lr"
                                         shells: root.currentElement.shells
                                         symbol: root.currentElement.symbol
                                         accentColor: root.currentCatMeta.color
+                                        textColor: root.textColor
+                                        ringColor: root.mutedText
+                                        valenceColor: root.warnColor
                                         animateOrbitals: root.opened
                                     }
 
                                     Text {
                                         width: 180
                                         horizontalAlignment: Text.AlignHCenter
-                                        text: "Outer yellow dots = " + root.fmt(root.currentElement.valence, "valence e⁻")
-                                        color: "#FDE047"
+                                        text: "Highlighted outer dots = " + root.fmt(root.currentElement.valence, "valence e⁻")
+                                        color: root.warnColor
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 10
                                     }
@@ -693,7 +705,7 @@ Ac-Lr"
 
                                     Text {
                                         text: "More Details: " + root.currentElement.name + " (Z=" + root.currentElement.z + ")"
-                                        color: "#2DD4BF"
+                                        color: root.accentColor
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 15
                                         font.bold: true
@@ -703,7 +715,7 @@ Ac-Lr"
                                         width: parent.width
                                         visible: root.hasValue(root.currentElement.chemistry)
                                         text: root.hasValue(root.currentElement.chemistry) ? root.currentElement.chemistry : ""
-                                        color: "#F1F5F9"
+                                        color: root.textColor
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 13
                                         wrapMode: Text.WordWrap
@@ -718,49 +730,49 @@ Ac-Lr"
 
                                         Text {
                                             text: "• Oxidation States: " + root.fmt(root.currentElement.oxidation)
-                                            color: "#CBD5E1"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• Electronegativity: " + root.fmt(root.currentElement.electronegativity, "(Pauling)")
-                                            color: "#CBD5E1"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• 1st Ionization Energy: " + root.fmt(root.currentElement.ionization, "kJ/mol")
-                                            color: "#CBD5E1"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• Van der Waals Radius: " + root.fmt(root.currentElement.radius, "pm")
-                                            color: "#CBD5E1"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• Melting Point: " + root.fmt(root.currentElement.meltK, "K")
-                                            color: "#CBD5E1"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• Boiling Point: " + root.fmt(root.currentElement.boilK, "K")
-                                            color: "#CBD5E1"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• Bohr Shells (K..Q): " + root.shellsText(root.currentElement, " · ")
-                                            color: "#93C5FD"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
                                             text: "• Electron Config: " + root.fmt(root.currentElement.config)
-                                            color: "#93C5FD"
+                                            color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
@@ -774,14 +786,14 @@ Ac-Lr"
                                             height: 24
                                             width: 135
                                             radius: 4
-                                            color: "#1E293B"
+                                            color: Style.normalFill
                                             border.width: 1
-                                            border.color: "#475569"
+                                            border.color: Style.normalBorderColor
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: "← Prev Element (H)"
-                                                color: "#E2E8F0"
+                                                color: root.textColor
                                                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                                 font.pixelSize: 11
                                             }
@@ -797,14 +809,14 @@ Ac-Lr"
                                             height: 24
                                             width: 135
                                             radius: 4
-                                            color: "#1E293B"
+                                            color: Style.normalFill
                                             border.width: 1
-                                            border.color: "#475569"
+                                            border.color: Style.normalBorderColor
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: "Next Element (L) →"
-                                                color: "#E2E8F0"
+                                                color: root.textColor
                                                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                                 font.pixelSize: 11
                                             }
@@ -826,16 +838,16 @@ Ac-Lr"
                             width: parent.width
                             height: 30
                             radius: 4
-                            color: root.showMoreDetails ? "#115E59" : "#0F766E"
+                            color: root.showMoreDetails ? Style.normalFill : Style.selectedFill
                             border.width: 1
-                            border.color: "#2DD4BF"
+                            border.color: root.accentColor
 
                             Text {
                                 anchors.centerIn: parent
                                 text: root.showMoreDetails
                                       ? "▴ Hide More Details & Return to Full 18×10 Periodic Table Grid (Enter / M / Esc)"
                                       : "▾ More Details — properties and animated Bohr shells for " + root.currentElement.name + " (Enter / M)"
-                                color: "#FFFFFF"
+                                color: root.textColor
                                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                 font.pixelSize: 12
                                 font.bold: true

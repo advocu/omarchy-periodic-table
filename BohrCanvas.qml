@@ -7,12 +7,16 @@ Item {
     property color accentColor: "#3B82F6"
     property color textColor: "#F8FAFC"
     property color ringColor: "#475569"
+    property color valenceColor: "#FACC15"
     property bool animateOrbitals: true
     property real phaseAngle: 0.0
 
     onShellsChanged: bohrCanvas.requestPaint()
     onSymbolChanged: bohrCanvas.requestPaint()
     onAccentColorChanged: bohrCanvas.requestPaint()
+    onTextColorChanged: bohrCanvas.requestPaint()
+    onRingColorChanged: bohrCanvas.requestPaint()
+    onValenceColorChanged: bohrCanvas.requestPaint()
 
     Timer {
         interval: 40
@@ -74,7 +78,7 @@ Item {
 
                     ctx.beginPath()
                     ctx.arc(ex, ey, isOuter ? 4.2 : 3.0, 0, Math.PI * 2)
-                    ctx.fillStyle = isOuter ? "#FACC15" : root.textColor
+                    ctx.fillStyle = isOuter ? root.valenceColor : root.textColor
                     ctx.fill()
                 }
             }
