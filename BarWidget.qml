@@ -1,10 +1,9 @@
 import QtQuick
-import Quickshell
 import qs.Ui
 
 BarWidget {
     id: root
-    moduleName: "io.github.advocatus.periodic-table"
+    moduleName: "io.github.advocu.periodic-table"
 
     readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
     readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false

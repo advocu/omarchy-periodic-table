@@ -1,12 +1,11 @@
 import QtQuick
-import Quickshell
 import qs.Commons
 import qs.Ui
 import "ElementsData.js" as ElementsDB
 
 Panel {
     id: root
-    moduleName: "io.github.advocatus.periodic-table"
+    moduleName: "io.github.advocu.periodic-table"
     manageIpc: false
 
     property var anchorItem: null
@@ -16,8 +15,7 @@ Panel {
     property int currentZ: 6
     property bool showMoreDetails: false
     property string activeCategoryFilter: ""
-    property string searchQuery: ""
-    property int heatmapMode: 0 // 0=Category, 1=Valence, 2=Electronegativity, 3=Radius
+    property int heatmapMode: 0 // 0=Category, 1=Valence, 2=Electronegativity, 3=Van der Waals radius
     property int tempKelvin: 298
     property bool showTempBar: false
     property bool quizActive: false
@@ -42,34 +40,80 @@ Panel {
         return false
     }
 
-    function matchesSearch(el) {
+    function matchesFilter(el) {
         if (!el) return false
-        if (root.activeCategoryFilter !== "" && el.category !== root.activeCategoryFilter)
-            return false
-        if (root.searchQuery === "")
-            return true
-        var q = root.searchQuery.toLowerCase()
-        return el.name.toLowerCase().indexOf(q) !== -1 ||
-               el.symbol.toLowerCase().indexOf(q) !== -1 ||
-               String(el.z) === q
+        return root.activeCategoryFilter === "" || el.category === root.activeCategoryFilter
+    }
+
+    // Missing data. A blank, null, or non-positive number means the dataset has
+    // no value for that field (0 is the bundle's sentinel for "unknown"). The UI
+    // says "no data" instead of printing a number or guessing a reason.
+    readonly property string noData: "no data"
+
+    function hasValue(v) {
+        if (v === undefined || v === null || v === "") return false
+        if (typeof v === "number") return !isNaN(v) && v > 0
+        return true
+    }
+
+    function fmt(v, unit) {
+        return root.hasValue(v) ? (unit ? v + " " + unit : String(v)) : root.noData
+    }
+
+    function shellsText(el, sep) {
+        return el && el.shells && el.shells.length ? el.shells.join(sep) : root.noData
+    }
+
+    // Mass is shown exactly as stored: a decimal string, or "[A]" (mass number)
+    // for elements without a standard atomic weight. Only decimals get "u".
+    function massText(el) {
+        if (!el || !root.hasValue(el.mass)) return root.noData
+        var m = String(el.mass)
+        return m.charAt(0) === "[" ? m : m + " u"
+    }
+
+    // Heatmap scales come from the elements that have a value; missing values
+    // are excluded from min/max and drawn in the no-data grey.
+    readonly property color noDataColor: "#475569"
+
+    function fieldRange(key) {
+        var lo = Infinity, hi = -Infinity
+        for (var i = 0; i < ElementsDB.ELEMENTS.length; i++) {
+            var v = ElementsDB.ELEMENTS[i][key]
+            if (!root.hasValue(v)) continue
+            if (v < lo) lo = v
+            if (v > hi) hi = v
+        }
+        return { lo: lo, hi: hi }
+    }
+
+    readonly property var valenceRange: fieldRange("valence")
+    readonly property var enRange: fieldRange("electronegativity")
+    readonly property var radiusRange: fieldRange("radius")
+
+    function scaled(v, range) {
+        if (range.hi <= range.lo) return 0.5
+        return Math.min(1.0, Math.max(0.0, (v - range.lo) / (range.hi - range.lo)))
     }
 
     function tileAccentColor(el) {
         if (!el) return "transparent"
         if (root.heatmapMode === 1) {
-            // Valence electrons heatmap (1..10)
-            var vRatio = Math.min(1.0, el.valence / 8.0)
+            // Valence electrons heatmap
+            if (!root.hasValue(el.valence)) return root.noDataColor
+            var vRatio = root.scaled(el.valence, root.valenceRange)
             return Qt.rgba(0.15 + 0.75 * vRatio, 0.55 - 0.2 * vRatio, 0.95 - 0.65 * vRatio, 1.0)
         }
         if (root.heatmapMode === 2) {
-            // Pauling electronegativity (0.7..4.0)
-            if (el.electronegativity <= 0) return "#475569"
-            var enRatio = Math.min(1.0, Math.max(0.0, (el.electronegativity - 0.7) / 3.3))
+            // Pauling electronegativity
+            if (!root.hasValue(el.electronegativity)) return root.noDataColor
+            var enRatio = root.scaled(el.electronegativity, root.enRange)
             return Qt.rgba(0.1 + 0.85 * enRatio, 0.75 - 0.45 * enRatio, 0.35, 1.0)
         }
         if (root.heatmapMode === 3) {
-            // Atomic radius (28..260 pm)
-            var rRatio = Math.min(1.0, Math.max(0.0, (el.radius - 28.0) / 232.0))
+            // Van der Waals radius
+            if (!root.hasValue(el.radius)) return root.noDataColor
+            var rRatio = root.scaled(el.radius, root.radiusRange)
             return Qt.rgba(0.25 + 0.55 * rRatio, 0.4 + 0.45 * (1.0 - rRatio), 0.9, 1.0)
         }
         return ElementsDB.categoryMeta(el.category).color
@@ -89,17 +133,28 @@ Panel {
                 return
             }
         }
-        // Fallback linear step
-        if (dCol !== 0 || dRow !== 0) {
-            var delta = dCol !== 0 ? dCol : (dRow * 8)
-            var nextZ = Math.max(1, Math.min(118, root.currentZ + delta))
-            root.currentZ = nextZ
+        // Past the end of a row, step to the previous/next atomic number.
+        // Past the end of a column, stay put.
+        if (dCol !== 0)
+            root.currentZ = Math.max(1, Math.min(118, root.currentZ + dCol))
+    }
+
+    // A quiz target must have every field the clue shows.
+    function quizReady(z) {
+        var el = ElementsDB.getByZ(z)
+        return root.hasValue(el.valence) && root.hasValue(el.config) && root.hasValue(el.category)
+    }
+
+    function nextQuizTarget(z) {
+        for (var i = 0; i < 118; i++) {
+            z = (z % 118) + 1
+            if (root.quizReady(z)) return z
         }
+        return z
     }
 
     function startQuizRound() {
-        var next = Math.floor(Math.random() * 118) + 1
-        root.quizTargetZ = next
+        root.quizTargetZ = root.nextQuizTarget(Math.floor(Math.random() * 118))
         root.quizFeedback = "Click or navigate + Enter on the element matching the clue!"
     }
 
@@ -108,13 +163,22 @@ Panel {
         if (selectedZ === root.quizTargetZ) {
             root.quizScore += 1
             var solved = ElementsDB.getByZ(selectedZ)
-            root.quizFeedback = "Correct! " + solved.name + " (" + solved.symbol + ") has " + solved.valence + " valence electrons."
-            var next = ((selectedZ * 37 + 13) % 118) + 1
-            root.quizTargetZ = next
+            root.quizFeedback = "Correct! " + solved.name + " (" + solved.symbol + ") has " + root.fmt(solved.valence, "valence electrons") + "."
+            root.quizTargetZ = root.nextQuizTarget((selectedZ * 37 + 13) % 118)
         } else {
             var picked = ElementsDB.getByZ(selectedZ)
             root.quizFeedback = "Not " + picked.symbol + " (Z=" + picked.z + "). Try again!"
         }
+    }
+
+    function activateCurrent() {
+        if (root.quizActive) root.checkQuizAnswer(root.currentZ)
+        else root.showMoreDetails = !root.showMoreDetails
+    }
+
+    function toggleQuiz() {
+        root.quizActive = !root.quizActive
+        if (root.quizActive) root.startQuizRound()
     }
 
     KeyboardPanel {
@@ -142,45 +206,16 @@ Panel {
                 root.switchPanel(direction)
             }
 
-            Keys.onPressed: function(event) {
-                if (event.key === Qt.Key_Left || event.key === Qt.Key_H) {
-                    root.moveFocusByGrid(0, -1)
-                    event.accepted = true
-                } else if (event.key === Qt.Key_Right || event.key === Qt.Key_L) {
-                    root.moveFocusByGrid(0, 1)
-                    event.accepted = true
-                } else if (event.key === Qt.Key_Up || event.key === Qt.Key_K) {
-                    root.moveFocusByGrid(-1, 0)
-                    event.accepted = true
-                } else if (event.key === Qt.Key_Down || event.key === Qt.Key_J) {
-                    root.moveFocusByGrid(1, 0)
-                    event.accepted = true
-                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_M) {
-                    if (root.quizActive) {
-                        root.checkQuizAnswer(root.currentZ)
-                    } else {
-                        root.showMoreDetails = !root.showMoreDetails
-                    }
-                    event.accepted = true
-                } else if (event.key === Qt.Key_T) {
-                    root.showTempBar = !root.showTempBar
-                    event.accepted = true
-                } else if (event.key === Qt.Key_V) {
-                    root.heatmapMode = (root.heatmapMode + 1) % 4
-                    event.accepted = true
-                } else if (event.key === Qt.Key_Q) {
-                    root.quizActive = !root.quizActive
-                    if (root.quizActive) root.startQuizRound()
-                    event.accepted = true
-                } else if (event.key === Qt.Key_Backspace) {
-                    if (root.searchQuery.length > 0) {
-                        root.searchQuery = root.searchQuery.slice(0, -1)
-                        event.accepted = true
-                    } else if (root.activeCategoryFilter !== "") {
-                        root.activeCategoryFilter = ""
-                        event.accepted = true
-                    }
-                }
+            onMoveRequested: function(dx, dy) {
+                root.moveFocusByGrid(dy, dx)
+            }
+            onReturnRequested: root.activateCurrent()
+            onTextKey: function(text, modifiers) {
+                if (modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return
+                if (text === "m" || text === "M") root.activateCurrent()
+                else if (text === "t" || text === "T") root.showTempBar = !root.showTempBar
+                else if (text === "v" || text === "V") root.heatmapMode = (root.heatmapMode + 1) % 4
+                else if (text === "q" || text === "Q") root.toggleQuiz()
             }
 
             Column {
@@ -213,10 +248,11 @@ Panel {
                         Text {
                             id: heatmapText
                             anchors.centerIn: parent
-                            text: root.heatmapMode === 0 ? "Color: Family (V)" :
-                                  root.heatmapMode === 1 ? "Color: Valence e⁻ (V)" :
-                                  root.heatmapMode === 2 ? "Color: Electronegativity (V)" :
-                                                           "Color: Atomic Radius (V)"
+                            text: (root.heatmapMode === 0 ? "Color: Family (V)" :
+                                   root.heatmapMode === 1 ? "Color: Valence e⁻ (V)" :
+                                   root.heatmapMode === 2 ? "Color: Electronegativity (V)" :
+                                                            "Color: Van der Waals Radius (V)")
+                                  + (root.heatmapMode === 0 ? "" : " · grey = no data")
                             color: root.barForeground
                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                             font.pixelSize: 11
@@ -273,10 +309,7 @@ Panel {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.quizActive = !root.quizActive
-                                if (root.quizActive) root.startQuizRound()
-                            }
+                            onClicked: root.toggleQuiz()
                         }
                     }
                 }
@@ -296,7 +329,7 @@ Panel {
 
                     Repeater {
                         model: [
-                            { label: "Absolute Zero (4 K)", k: 4 },
+                            { label: "Liquid Helium (4 K)", k: 4 },
                             { label: "Liquid N₂ (77 K)", k: 77 },
                             { label: "Room Temp (298 K)", k: 298 },
                             { label: "Hand Warmth (305 K)", k: 305 },
@@ -347,7 +380,7 @@ Panel {
 
                         Text {
                             property var qEl: ElementsDB.getByZ(root.quizTargetZ)
-                            text: "CLUE: Atomic #" + qEl.z + " · " + qEl.valence + " valence e⁻ · Config " + qEl.config + " · " + ElementsDB.categoryMeta(qEl.category).label
+                            text: "CLUE: Atomic #" + qEl.z + " · Valence e⁻: " + root.fmt(qEl.valence) + " · Config " + root.fmt(qEl.config) + " · " + ElementsDB.categoryMeta(qEl.category).label
                             color: "#FDE68A"
                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                             font.pixelSize: 12
@@ -446,7 +479,7 @@ Panel {
                             readonly property var el: ElementsDB.getByGrid(gRow, gCol)
                             readonly property bool hasElement: el !== null
                             readonly property bool isFocused: hasElement && (el.z === root.currentZ)
-                            readonly property bool isMatched: hasElement && root.matchesSearch(el)
+                            readonly property bool isMatched: hasElement && root.matchesFilter(el)
 
                             width: Math.floor((periodicGrid.width - 34) / 18)
                             height: 38
@@ -477,7 +510,7 @@ Panel {
                                     anchors.top: parent.top
                                     anchors.right: parent.right
                                     anchors.margins: 2
-                                    text: parent.parent.hasElement ? (parent.parent.el.valence + "e⁻") : ""
+                                    text: parent.parent.hasElement && root.hasValue(parent.parent.el.valence) ? (parent.parent.el.valence + "e⁻") : ""
                                     color: parent.parent.isFocused ? "#FEF08A" : "#38BDF8"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 8
@@ -608,7 +641,7 @@ Ac-Lr"
                                     anchors.bottom: parent.bottom
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     anchors.bottomMargin: 3
-                                    text: root.currentElement.mass + " u"
+                                    text: root.massText(root.currentElement)
                                     color: "#F8FAFC"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 9
@@ -642,7 +675,7 @@ Ac-Lr"
                                         Text {
                                             id: valBadgeTxt
                                             anchors.centerIn: parent
-                                            text: "Valence Electrons: " + root.currentElement.valence + " e⁻"
+                                            text: "Valence Electrons: " + root.fmt(root.currentElement.valence, "e⁻")
                                             color: "#FEF08A"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 11
@@ -672,19 +705,33 @@ Ac-Lr"
                                 Text {
                                     width: parent.width
                                     text: "Atomic #: " + root.currentElement.z +
-                                          "   |   Config: " + root.currentElement.config +
-                                          "   |   Shells: [" + root.currentElement.shells.join(", ") + "]" +
-                                          "   |   Period " + root.currentElement.period + ", Group " + root.currentElement.group +
-                                          "   |   State @ " + root.tempKelvin + " K: " + ElementsDB.getPhaseAtTemp(root.currentElement, root.tempKelvin)
+                                          "   |   Config: " + root.fmt(root.currentElement.config) +
+                                          "   |   Shells: " + root.shellsText(root.currentElement, ", ") +
+                                          "   |   Period " + root.currentElement.period + ", Group " + root.currentElement.group
                                     color: "#93C5FD"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 12
                                     wrapMode: Text.WordWrap
                                 }
 
+                                // getPhaseAtTemp() returns "Unknown" when the melting/boiling
+                                // data cannot decide; that state gets its own colour and label.
+                                Text {
+                                    readonly property string phase: ElementsDB.getPhaseAtTemp(root.currentElement, root.tempKelvin)
+                                    readonly property bool unknown: phase === "Unknown"
+                                    width: parent.width
+                                    text: "State @ " + root.tempKelvin + " K: " + (unknown ? "Unknown (no melting/boiling data)" : phase)
+                                    color: unknown ? "#FBBF24" : "#93C5FD"
+                                    font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                    font.pixelSize: 12
+                                    font.italic: unknown
+                                    wrapMode: Text.WordWrap
+                                }
+
                                 Text {
                                     width: parent.width
-                                    text: root.currentElement.summary
+                                    visible: root.hasValue(root.currentElement.summary)
+                                    text: root.hasValue(root.currentElement.summary) ? root.currentElement.summary : ""
                                     color: "#E2E8F0"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 12
@@ -722,12 +769,13 @@ Ac-Lr"
                                         shells: root.currentElement.shells
                                         symbol: root.currentElement.symbol
                                         accentColor: root.currentCatMeta.color
+                                        animateOrbitals: root.opened
                                     }
 
                                     Text {
                                         width: 180
                                         horizontalAlignment: Text.AlignHCenter
-                                        text: "Outer yellow dots = " + root.currentElement.valence + " valence e⁻"
+                                        text: "Outer yellow dots = " + root.fmt(root.currentElement.valence, "valence e⁻")
                                         color: "#FDE047"
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 10
@@ -740,7 +788,7 @@ Ac-Lr"
                                     spacing: Style.space(8)
 
                                     Text {
-                                        text: "Deep Chemistry & Atomic Structure of " + root.currentElement.name + " (Z=" + root.currentElement.z + ")"
+                                        text: "More Details: " + root.currentElement.name + " (Z=" + root.currentElement.z + ")"
                                         color: "#2DD4BF"
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 15
@@ -749,7 +797,8 @@ Ac-Lr"
 
                                     Text {
                                         width: parent.width
-                                        text: root.currentElement.chemistry
+                                        visible: root.hasValue(root.currentElement.chemistry)
+                                        text: root.hasValue(root.currentElement.chemistry) ? root.currentElement.chemistry : ""
                                         color: "#F1F5F9"
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 13
@@ -764,55 +813,55 @@ Ac-Lr"
                                         rowSpacing: Style.space(6)
 
                                         Text {
-                                            text: "• Oxidation States: " + root.currentElement.oxidation
+                                            text: "• Oxidation States: " + root.fmt(root.currentElement.oxidation)
                                             color: "#CBD5E1"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Electronegativity: " + (root.currentElement.electronegativity > 0 ? root.currentElement.electronegativity + " (Pauling)" : "N/A")
+                                            text: "• Electronegativity: " + root.fmt(root.currentElement.electronegativity, "(Pauling)")
                                             color: "#CBD5E1"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• 1st Ionization Energy: " + root.currentElement.ionization + " kJ/mol"
+                                            text: "• 1st Ionization Energy: " + root.fmt(root.currentElement.ionization, "kJ/mol")
                                             color: "#CBD5E1"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Covalent Radius: " + root.currentElement.radius + " pm"
+                                            text: "• Van der Waals Radius: " + root.fmt(root.currentElement.radius, "pm")
                                             color: "#CBD5E1"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Melting Point: " + (root.currentElement.meltK > 0 ? root.currentElement.meltK + " K" : "Synthetic")
+                                            text: "• Melting Point: " + root.fmt(root.currentElement.meltK, "K")
                                             color: "#CBD5E1"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Boiling Point: " + (root.currentElement.boilK > 0 ? root.currentElement.boilK + " K" : "Synthetic")
+                                            text: "• Boiling Point: " + root.fmt(root.currentElement.boilK, "K")
                                             color: "#CBD5E1"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Crystal Lattice: " + root.currentElement.crystal
+                                            text: "• Crystal Lattice: " + root.fmt(root.currentElement.crystal)
                                             color: "#93C5FD"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Bohr Shells (K..Q): " + root.currentElement.shells.join(" · ")
+                                            text: "• Bohr Shells (K..Q): " + root.shellsText(root.currentElement, " · ")
                                             color: "#93C5FD"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
-                                            text: "• Electron Config: " + root.currentElement.config
+                                            text: "• Electron Config: " + root.fmt(root.currentElement.config)
                                             color: "#93C5FD"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
@@ -887,7 +936,7 @@ Ac-Lr"
                                 anchors.centerIn: parent
                                 text: root.showMoreDetails
                                       ? "▴ Hide More Details & Return to Full 18×10 Periodic Table Grid (Enter / M / Esc)"
-                                      : "▾ More Details — View Deep Chemistry, Reactions, Crystal Lattice & Animated Bohr Orbitals for " + root.currentElement.name + " (Enter / M)"
+                                      : "▾ More Details — properties and animated Bohr shells for " + root.currentElement.name + " (Enter / M)"
                                 color: "#FFFFFF"
                                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                 font.pixelSize: 12
