@@ -419,7 +419,7 @@ Panel {
                                     text: parent.parent.hasElement ? String(parent.parent.el.z) : ""
                                     color: parent.parent.isFocused ? "#FFFFFF" : root.mutedText
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                    font.pixelSize: 8
+                                    font.pixelSize: 9
                                 }
 
                                 Text {
@@ -441,7 +441,7 @@ Panel {
                                           : ""
                                     color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                    font.pixelSize: 13
+                                    font.pixelSize: 14
                                     font.bold: true
                                 }
 
@@ -458,7 +458,11 @@ Panel {
                                           : ""
                                     color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                    font.pixelSize: 7
+                                    font.pixelSize: 8
+                                    font.bold: true
+                                    // Long names (Rutherfordium) shrink to fit the tile instead of eliding.
+                                    fontSizeMode: Text.HorizontalFit
+                                    minimumPixelSize: 5
                                 }
 
                                 MouseArea {
