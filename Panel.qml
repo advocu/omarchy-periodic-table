@@ -135,6 +135,10 @@ Panel {
             root.currentZ = Math.max(1, Math.min(118, root.currentZ + dCol))
     }
 
+    function stepZ(delta) {
+        root.currentZ = Math.max(1, Math.min(118, root.currentZ + delta))
+    }
+
     function toggleMoreDetails() {
         root.showMoreDetails = !root.showMoreDetails
     }
@@ -165,7 +169,10 @@ Panel {
             }
 
             onMoveRequested: function(dx, dy) {
-                root.moveFocusByGrid(dy, dx)
+                // In More Details the grid is hidden, and Left/Right (h/l) match the
+                // Prev/Next buttons: one atomic number back or forward.
+                if (root.showMoreDetails && dy === 0) root.stepZ(dx)
+                else root.moveFocusByGrid(dy, dx)
             }
             onReturnRequested: root.toggleMoreDetails()
             onTextKey: function(text, modifiers) {
@@ -782,7 +789,7 @@ Ac-Lr"
                                             MouseArea {
                                                 anchors.fill: parent
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.currentZ = Math.max(1, root.currentZ - 1)
+                                                onClicked: root.stepZ(-1)
                                             }
                                         }
 
@@ -805,7 +812,7 @@ Ac-Lr"
                                             MouseArea {
                                                 anchors.fill: parent
                                                 cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.currentZ = Math.min(118, root.currentZ + 1)
+                                                onClicked: root.stepZ(1)
                                             }
                                         }
                                     }

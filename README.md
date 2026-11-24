@@ -32,6 +32,7 @@ Sections are `left`, `centerBegin`, `center`, `centerEnd`, `tray`, and `right`.
 | Click `⚛ Pt` | Open or close the table |
 | Mouse over a tile | Show that element in the card |
 | Arrow keys or `h` `j` `k` `l` | Move around the grid |
+| Left/Right or `h` `l` in More Details, or its Prev/Next buttons | Previous or next element by atomic number |
 | `Enter` or `m`, the **More Details** bar, or double-click a tile | Open or close More Details |
 | `v` | Cycle tile colours: family, valence electrons, electronegativity, van der Waals radius |
 | `t` | Show or hide the temperature presets (4 K to 5,800 K) and the state at that temperature |
