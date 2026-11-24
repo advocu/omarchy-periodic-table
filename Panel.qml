@@ -686,15 +686,6 @@ Ac-Lr"
                                         valenceColor: root.warnColor
                                         animateOrbitals: root.opened
                                     }
-
-                                    Text {
-                                        width: 180
-                                        horizontalAlignment: Text.AlignHCenter
-                                        text: "Highlighted outer dots = " + root.fmt(root.currentElement.valence, "valence e⁻")
-                                        color: root.warnColor
-                                        font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                        font.pixelSize: 10
-                                    }
                                 }
 
                                 // Right: Comprehensive Chemistry & Physical Properties Breakdown
