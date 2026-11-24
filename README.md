@@ -4,6 +4,8 @@ A periodic table that lives in the Omarchy top bar. Click the `⚛ Pt` button to
 
 Needs Omarchy 4.x (the Quattro shell with plugin support). It is plain QML and JavaScript with the element data bundled. It starts no processes and makes no network requests.
 
+![Periodic Table](preview.png)
+
 ## Install
 
 ```sh
