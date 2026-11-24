@@ -35,7 +35,6 @@ Sections are `left`, `centerBegin`, `center`, `centerEnd`, `tray`, and `right`.
 | `Enter` or `m`, the **More Details** bar, or double-click a tile | Open or close More Details |
 | `v` | Cycle tile colours: family, valence electrons, electronegativity, van der Waals radius |
 | `t` | Show or hide the temperature presets (4 K to 5,800 K) and the state at that temperature |
-| `q` | Start or stop the quiz. Pick the element that matches the clue, then press `Enter` or click it |
 | Category buttons | Dim every element outside that family. Click again, or **All**, to clear |
 | `Tab` / `Shift+Tab` | Move to the next or previous bar popup |
 | `Esc` | Close More Details, then close the table |
@@ -54,7 +53,6 @@ Some values are not known, mostly for the heaviest elements. The plugin never fi
 - In the card and in More Details, a missing value reads **no data**.
 - With the temperature presets on, the state reads **Unknown (no melting/boiling data)** in amber when the data can't decide it.
 - In the colour modes, elements without a value are grey, and the mode label says so. They are left out of the colour scale.
-- The quiz only asks about elements whose clue fields all have values.
 
 Masses in square brackets, such as `[295]`, are mass numbers for elements with no standard atomic weight. Electron configurations marked `(predicted)` or `(calculated)` are shown as the source gives them.
 

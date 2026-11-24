@@ -18,10 +18,6 @@ Panel {
     property int heatmapMode: 0 // 0=Category, 1=Valence, 2=Electronegativity, 3=Van der Waals radius
     property int tempKelvin: 298
     property bool showTempBar: false
-    property bool quizActive: false
-    property int quizTargetZ: 26
-    property int quizScore: 0
-    property string quizFeedback: ""
 
     readonly property var currentElement: ElementsDB.getByZ(root.currentZ)
     readonly property var currentCatMeta: ElementsDB.categoryMeta(root.currentElement.category)
@@ -139,46 +135,8 @@ Panel {
             root.currentZ = Math.max(1, Math.min(118, root.currentZ + dCol))
     }
 
-    // A quiz target must have every field the clue shows.
-    function quizReady(z) {
-        var el = ElementsDB.getByZ(z)
-        return root.hasValue(el.valence) && root.hasValue(el.config) && root.hasValue(el.category)
-    }
-
-    function nextQuizTarget(z) {
-        for (var i = 0; i < 118; i++) {
-            z = (z % 118) + 1
-            if (root.quizReady(z)) return z
-        }
-        return z
-    }
-
-    function startQuizRound() {
-        root.quizTargetZ = root.nextQuizTarget(Math.floor(Math.random() * 118))
-        root.quizFeedback = "Click or navigate + Enter on the element matching the clue!"
-    }
-
-    function checkQuizAnswer(selectedZ) {
-        if (!root.quizActive) return
-        if (selectedZ === root.quizTargetZ) {
-            root.quizScore += 1
-            var solved = ElementsDB.getByZ(selectedZ)
-            root.quizFeedback = "Correct! " + solved.name + " (" + solved.symbol + ") has " + root.fmt(solved.valence, "valence electrons") + "."
-            root.quizTargetZ = root.nextQuizTarget((selectedZ * 37 + 13) % 118)
-        } else {
-            var picked = ElementsDB.getByZ(selectedZ)
-            root.quizFeedback = "Not " + picked.symbol + " (Z=" + picked.z + "). Try again!"
-        }
-    }
-
-    function activateCurrent() {
-        if (root.quizActive) root.checkQuizAnswer(root.currentZ)
-        else root.showMoreDetails = !root.showMoreDetails
-    }
-
-    function toggleQuiz() {
-        root.quizActive = !root.quizActive
-        if (root.quizActive) root.startQuizRound()
+    function toggleMoreDetails() {
+        root.showMoreDetails = !root.showMoreDetails
     }
 
     KeyboardPanel {
@@ -209,13 +167,12 @@ Panel {
             onMoveRequested: function(dx, dy) {
                 root.moveFocusByGrid(dy, dx)
             }
-            onReturnRequested: root.activateCurrent()
+            onReturnRequested: root.toggleMoreDetails()
             onTextKey: function(text, modifiers) {
                 if (modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return
-                if (text === "m" || text === "M") root.activateCurrent()
+                if (text === "m" || text === "M") root.toggleMoreDetails()
                 else if (text === "t" || text === "T") root.showTempBar = !root.showTempBar
                 else if (text === "v" || text === "V") root.heatmapMode = (root.heatmapMode + 1) % 4
-                else if (text === "q" || text === "Q") root.toggleQuiz()
             }
 
             Column {
@@ -288,30 +245,6 @@ Panel {
                             onClicked: root.showTempBar = !root.showTempBar
                         }
                     }
-
-                    Rectangle {
-                        height: Style.space(24)
-                        width: quizToggleText.implicitWidth + Style.space(16)
-                        radius: Style.space(4)
-                        color: root.quizActive ? Qt.rgba(0.85, 0.55, 0.05, 0.5) : Qt.rgba(0.2, 0.25, 0.33, 0.35)
-                        border.width: 1
-                        border.color: root.quizActive ? "#F59E0B" : "#475569"
-
-                        Text {
-                            id: quizToggleText
-                            anchors.centerIn: parent
-                            text: root.quizActive ? "Quiz Active · Score: " + root.quizScore + " (Q)" : "Flash Quiz (Q)"
-                            color: root.barForeground
-                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                            font.pixelSize: 11
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.toggleQuiz()
-                        }
-                    }
                 }
 
                 // Optional Temperature Phase Presets Bar
@@ -359,39 +292,6 @@ Panel {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.tempKelvin = modelData.k
                             }
-                        }
-                    }
-                }
-
-                // Optional Flash Quiz Prompt Bar
-                Rectangle {
-                    visible: root.quizActive
-                    width: parent.width
-                    height: Style.space(36)
-                    radius: Style.space(4)
-                    color: Qt.rgba(0.25, 0.18, 0.04, 0.65)
-                    border.width: 1
-                    border.color: "#F59E0B"
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.margins: Style.space(8)
-                        spacing: Style.space(12)
-
-                        Text {
-                            property var qEl: ElementsDB.getByZ(root.quizTargetZ)
-                            text: "CLUE: Atomic #" + qEl.z + " · Valence e⁻: " + root.fmt(qEl.valence) + " · Config " + root.fmt(qEl.config) + " · " + ElementsDB.categoryMeta(qEl.category).label
-                            color: "#FDE68A"
-                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-
-                        Text {
-                            text: root.quizFeedback
-                            color: root.barForeground
-                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                            font.pixelSize: 11
                         }
                     }
                 }
@@ -521,7 +421,7 @@ Panel {
                                     anchors.centerIn: parent
                                     anchors.verticalCenterOffset: -1
                                     text: parent.parent.hasElement
-                                          ? (root.quizActive && parent.parent.el.z === root.quizTargetZ ? "?" : parent.parent.el.symbol)
+                                          ? parent.parent.el.symbol
                                           : ""
                                     color: "#FFFFFF"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -538,7 +438,7 @@ Panel {
                                     horizontalAlignment: Text.AlignHCenter
                                     elide: Text.ElideRight
                                     text: parent.parent.hasElement
-                                          ? (root.quizActive && parent.parent.el.z === root.quizTargetZ ? "???" : parent.parent.el.name)
+                                          ? parent.parent.el.name
                                           : ""
                                     color: parent.parent.isFocused ? "#FFFFFF" : "#CBD5E1"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -557,13 +457,10 @@ Panel {
                                     onClicked: {
                                         if (parent.parent.hasElement) {
                                             root.currentZ = parent.parent.el.z
-                                            if (root.quizActive) {
-                                                root.checkQuizAnswer(parent.parent.el.z)
-                                            }
                                         }
                                     }
                                     onDoubleClicked: {
-                                        if (parent.parent.hasElement && !root.quizActive) {
+                                        if (parent.parent.hasElement) {
                                             root.currentZ = parent.parent.el.z
                                             root.showMoreDetails = true
                                         }
