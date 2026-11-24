@@ -435,13 +435,12 @@ Panel {
                                 // Center Symbol
                                 Text {
                                     anchors.centerIn: parent
-                                    anchors.verticalCenterOffset: -1
                                     text: parent.parent.hasElement
                                           ? parent.parent.el.symbol
                                           : ""
                                     color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                    font.pixelSize: 14
+                                    font.pixelSize: 18
                                     font.bold: true
                                 }
 
@@ -459,10 +458,6 @@ Panel {
                                     color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 7
-                                    font.bold: true
-                                    // Long names (Rutherfordium) shrink to fit, down to 6px; past that they elide.
-                                    fontSizeMode: Text.HorizontalFit
-                                    minimumPixelSize: 6
                                 }
 
                                 MouseArea {
