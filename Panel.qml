@@ -458,11 +458,11 @@ Panel {
                                           : ""
                                     color: parent.parent.isFocused ? "#FFFFFF" : root.textColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                    font.pixelSize: 8
+                                    font.pixelSize: 7
                                     font.bold: true
-                                    // Long names (Rutherfordium) shrink to fit the tile instead of eliding.
+                                    // Long names (Rutherfordium) shrink to fit, down to 6px; past that they elide.
                                     fontSizeMode: Text.HorizontalFit
-                                    minimumPixelSize: 5
+                                    minimumPixelSize: 6
                                 }
 
                                 MouseArea {
