@@ -672,6 +672,7 @@ Ac-Lr"
 
                                 // Left: Animated 2D Bohr Orbital Visualizer
                                 Column {
+                                    id: bohrColumn
                                     width: 190
                                     spacing: 4
 
@@ -690,7 +691,7 @@ Ac-Lr"
 
                                 // Right: Comprehensive Chemistry & Physical Properties Breakdown
                                 Column {
-                                    width: parent.width - 210
+                                    width: parent.width - bohrColumn.width - parent.spacing
                                     spacing: Style.space(8)
 
                                     Text {
@@ -720,7 +721,7 @@ Ac-Lr"
 
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Oxidation States: " + root.fmt(root.currentElement.oxidation)
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -728,7 +729,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Electronegativity: " + root.fmt(root.currentElement.electronegativity, "(Pauling)")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -736,7 +737,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• 1st Ionization Energy: " + root.fmt(root.currentElement.ionization, "kJ/mol")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -744,7 +745,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Van der Waals Radius: " + root.fmt(root.currentElement.radius, "pm")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -752,7 +753,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Melting Point: " + root.fmt(root.currentElement.meltK, "K")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -760,7 +761,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Boiling Point: " + root.fmt(root.currentElement.boilK, "K")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -768,7 +769,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Bohr Shells (K..Q): " + root.shellsText(root.currentElement, " · ")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -776,7 +777,7 @@ Ac-Lr"
                                         }
                                         Text {
                                             width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.WordWrap
+                                            wrapMode: Text.Wrap
                                             text: "• Electron Config: " + root.fmt(root.currentElement.config)
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -790,13 +791,14 @@ Ac-Lr"
 
                                         Rectangle {
                                             height: 24
-                                            width: 135
+                                            width: Math.max(135, prevLbl.implicitWidth + Style.space(16))
                                             radius: 4
                                             color: Style.normalFill
                                             border.width: 1
                                             border.color: Style.normalBorderColor
 
                                             Text {
+                                                id: prevLbl
                                                 anchors.centerIn: parent
                                                 text: "← Prev Element (H)"
                                                 color: root.textColor
@@ -813,13 +815,14 @@ Ac-Lr"
 
                                         Rectangle {
                                             height: 24
-                                            width: 135
+                                            width: Math.max(135, nextLbl.implicitWidth + Style.space(16))
                                             radius: 4
                                             color: Style.normalFill
                                             border.width: 1
                                             border.color: Style.normalBorderColor
 
                                             Text {
+                                                id: nextLbl
                                                 anchors.centerIn: parent
                                                 text: "Next Element (L) →"
                                                 color: root.textColor
