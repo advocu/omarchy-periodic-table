@@ -719,48 +719,64 @@ Ac-Lr"
                                         rowSpacing: Style.space(6)
 
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Oxidation States: " + root.fmt(root.currentElement.oxidation)
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Electronegativity: " + root.fmt(root.currentElement.electronegativity, "(Pauling)")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• 1st Ionization Energy: " + root.fmt(root.currentElement.ionization, "kJ/mol")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Van der Waals Radius: " + root.fmt(root.currentElement.radius, "pm")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Melting Point: " + root.fmt(root.currentElement.meltK, "K")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Boiling Point: " + root.fmt(root.currentElement.boilK, "K")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Bohr Shells (K..Q): " + root.shellsText(root.currentElement, " · ")
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
                                         Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.WordWrap
                                             text: "• Electron Config: " + root.fmt(root.currentElement.config)
                                             color: root.textColor
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
