@@ -9,6 +9,7 @@ Item {
     property color ringColor: "#475569"
     property color valenceColor: "#FACC15"
     property bool animateOrbitals: true
+    property bool paused: false
     property real phaseAngle: 0.0
 
     onShellsChanged: bohrCanvas.requestPaint()
@@ -17,10 +18,11 @@ Item {
     onTextColorChanged: bohrCanvas.requestPaint()
     onRingColorChanged: bohrCanvas.requestPaint()
     onValenceColorChanged: bohrCanvas.requestPaint()
+    onVisibleChanged: if (!visible) paused = false
 
     Timer {
         interval: 40
-        running: root.visible && root.animateOrbitals
+        running: root.visible && root.animateOrbitals && !root.paused
         repeat: true
         onTriggered: {
             root.phaseAngle = (root.phaseAngle + 0.025) % (Math.PI * 2)
@@ -83,5 +85,12 @@ Item {
                 }
             }
         }
+    }
+
+    // Click the diagram to pause or resume the orbit animation.
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.paused = !root.paused
     }
 }

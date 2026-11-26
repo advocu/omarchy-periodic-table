@@ -27,6 +27,9 @@ Panel {
     property int heatmapMode: 0 // 0=Category, 1=Valence, 2=Electronegativity, 3=Van der Waals radius
     property int tempKelvin: 298
     property bool showTempBar: false
+    property int pinnedZ: 0 // 0 = unpinned; while pinned, hovering other tiles does not change the selection
+
+    onOpenedChanged: if (!root.opened) root.pinnedZ = 0
 
     readonly property var currentElement: ElementsDB.getByZ(root.currentZ)
     readonly property var currentCatMeta: ElementsDB.categoryMeta(root.currentElement.category)
@@ -63,6 +66,25 @@ Panel {
 
     function fmt(v, unit) {
         return root.hasValue(v) ? (unit ? v + " " + unit : String(v)) : root.noData
+    }
+
+    // Top-right tile slot: phase letter in temperature mode, otherwise the value the heatmap shows.
+    function tileMetricText(el) {
+        if (!el) return ""
+        if (root.showTempBar) {
+            var phase = ElementsDB.getPhaseAtTemp(el, root.tempKelvin)
+            return phase === "Solid" ? "S" : phase === "Liquid" ? "L" : phase === "Gas" ? "G" : "?"
+        }
+        if (root.heatmapMode === 2) return root.hasValue(el.electronegativity) ? String(el.electronegativity) : ""
+        if (root.heatmapMode === 3) return root.hasValue(el.radius) ? String(el.radius) : ""
+        return root.hasValue(el.valence) ? (el.valence + "e⁻") : ""
+    }
+
+    // Density as plain decimals: gas values such as 0.00008988 never print in exponent form.
+    function densityText(el) {
+        if (!el || !root.hasValue(el.density)) return root.noData
+        var v = Number(el.density)
+        return (v < 0.001 ? v.toFixed(8).replace(/\.?0+$/, "") : String(v)) + " g/cm³"
     }
 
     function shellsText(el, sep) {
@@ -169,6 +191,8 @@ Panel {
             onCloseRequested: {
                 if (root.showMoreDetails) {
                     root.showMoreDetails = false
+                } else if (root.pinnedZ !== 0) {
+                    root.pinnedZ = 0
                 } else {
                     root.close()
                 }
@@ -178,6 +202,7 @@ Panel {
             }
 
             onMoveRequested: function(dx, dy) {
+                root.pinnedZ = 0
                 // In More Details the grid is hidden, and Left/Right (h/l) match the
                 // Prev/Next buttons: one atomic number back or forward.
                 if (root.showMoreDetails && dy === 0) root.stepZ(dx)
@@ -196,8 +221,8 @@ Panel {
                 width: parent.width
                 spacing: Style.space(8)
 
-                // Top Header & Controls Strip
-                Row {
+                // Top Header & Controls Strip (wraps the pills under the title if the fonts are too wide)
+                Flow {
                     width: parent.width
                     spacing: Style.space(8)
 
@@ -249,7 +274,7 @@ Panel {
                         Text {
                             id: tempToggleText
                             anchors.centerIn: parent
-                            text: "Phase Temp: " + root.tempKelvin + " K (T)"
+                            text: "Phase Temp: " + root.tempKelvin + " K · " + (root.tempKelvin - 273) + " °C (T)"
                             color: root.barForeground
                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                             font.pixelSize: 11
@@ -426,7 +451,7 @@ Panel {
                                     anchors.top: parent.top
                                     anchors.right: parent.right
                                     anchors.margins: 2
-                                    text: parent.parent.hasElement && root.hasValue(parent.parent.el.valence) ? (parent.parent.el.valence + "e⁻") : ""
+                                    text: parent.parent.hasElement ? root.tileMetricText(parent.parent.el) : ""
                                     color: parent.parent.isFocused ? "#FEF08A" : root.accentColor
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 8
@@ -460,18 +485,37 @@ Panel {
                                     font.pixelSize: 7
                                 }
 
+                                // Pinned tile: tiny dot in the bottom-right corner
+                                Rectangle {
+                                    visible: parent.parent.hasElement && parent.parent.el.z === root.pinnedZ
+                                    anchors.bottom: parent.bottom
+                                    anchors.right: parent.right
+                                    anchors.margins: 2
+                                    width: 4
+                                    height: 4
+                                    radius: 2
+                                    color: "#FFFFFF"
+                                }
+
                                 MouseArea {
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                                     cursorShape: Qt.PointingHandCursor
                                     onEntered: {
-                                        if (parent.parent.hasElement) {
+                                        if (parent.parent.hasElement && root.pinnedZ === 0) {
                                             root.currentZ = parent.parent.el.z
                                         }
                                     }
-                                    onClicked: {
-                                        if (parent.parent.hasElement) {
-                                            root.currentZ = parent.parent.el.z
+                                    // Left or right click pins the tile; clicking the pinned tile again unpins it.
+                                    onClicked: function(mouse) {
+                                        if (!parent.parent.hasElement) return
+                                        var z = parent.parent.el.z
+                                        if (root.pinnedZ === z) {
+                                            root.pinnedZ = 0
+                                        } else {
+                                            root.currentZ = z
+                                            root.pinnedZ = z
                                         }
                                     }
                                     onDoubleClicked: {
@@ -557,6 +601,18 @@ Ac-Lr"
                                     color: "#F8FAFC"
                                     font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                     font.pixelSize: 9
+                                }
+
+                                Text {
+                                    visible: root.pinnedZ !== 0 && root.pinnedZ === root.currentElement.z
+                                    anchors.top: parent.top
+                                    anchors.right: parent.right
+                                    anchors.margins: 4
+                                    text: "PIN"
+                                    color: "#FFFFFF"
+                                    font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                    font.pixelSize: 9
+                                    font.bold: true
                                 }
                             }
 
@@ -783,6 +839,22 @@ Ac-Lr"
                                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                             font.pixelSize: 12
                                         }
+                                        Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.Wrap
+                                            text: "• Density: " + root.densityText(root.currentElement)
+                                            color: root.textColor
+                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                            font.pixelSize: 12
+                                        }
+                                        Text {
+                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
+                                            wrapMode: Text.Wrap
+                                            text: "• Discovered: " + root.fmt(root.currentElement.yearDiscovered)
+                                            color: root.textColor
+                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                            font.pixelSize: 12
+                                        }
                                     }
 
                                     // Quick Prev / Next Element Navigation inside Deep Chemistry View
@@ -836,6 +908,15 @@ Ac-Lr"
                                                 onClicked: root.stepZ(1)
                                             }
                                         }
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: "Sources: IUPAC 2024 · PubChem · NIST"
+                                        color: root.mutedText
+                                        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                        font.pixelSize: 10
+                                        wrapMode: Text.WordWrap
                                     }
                                 }
                             }
