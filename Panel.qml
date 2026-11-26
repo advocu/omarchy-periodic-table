@@ -87,6 +87,23 @@ Panel {
         return (v < 0.001 ? v.toFixed(8).replace(/\.?0+$/, "") : String(v)) + " g/cm³"
     }
 
+    // More Details facts, in display order, keeping only fields the dataset has a value for.
+    function detailSpecs(el) {
+        var out = []
+        if (!el) return out
+        if (root.hasValue(el.oxidation)) out.push("• Oxidation States: " + el.oxidation)
+        if (root.hasValue(el.electronegativity)) out.push("• Electronegativity: " + el.electronegativity + " (Pauling)")
+        if (root.hasValue(el.ionization)) out.push("• 1st Ionization Energy: " + el.ionization + " kJ/mol")
+        if (root.hasValue(el.radius)) out.push("• Van der Waals Radius: " + el.radius + " pm")
+        if (root.hasValue(el.meltK)) out.push("• Melting Point: " + el.meltK + " K")
+        if (root.hasValue(el.boilK)) out.push("• Boiling Point: " + el.boilK + " K")
+        if (el.shells && el.shells.length > 0) out.push("• Bohr Shells (K..Q): " + root.shellsText(el, " · "))
+        if (root.hasValue(el.config)) out.push("• Electron Config: " + el.config)
+        if (root.hasValue(el.density)) out.push("• Density: " + root.densityText(el))
+        if (root.hasValue(el.yearDiscovered)) out.push("• Discovered: " + el.yearDiscovered)
+        return out
+    }
+
     function shellsText(el, sep) {
         return el && el.shells && el.shells.length ? el.shells.join(sep) : root.noData
     }
@@ -250,7 +267,7 @@ Panel {
                                    root.heatmapMode === 1 ? "Color: Valence e⁻ (V)" :
                                    root.heatmapMode === 2 ? "Color: Electronegativity (V)" :
                                                             "Color: Van der Waals Radius (V)")
-                                  + (root.heatmapMode === 0 ? "" : " · grey = no data")
+                                  + (root.heatmapMode === 2 || root.heatmapMode === 3 ? " · grey = no data" : "")
                             color: root.barForeground
                             font.family: root.bar ? root.bar.fontFamily : Style.font.family
                             font.pixelSize: 11
@@ -768,92 +785,24 @@ Ac-Lr"
                                         wrapMode: Text.WordWrap
                                     }
 
-                                    // Quantitative Chemistry Specs Grid
+                                    // Quantitative Chemistry Specs Grid (measured fields only)
                                     Grid {
+                                        id: specsGrid
                                         width: parent.width
                                         columns: 3
                                         columnSpacing: Style.space(16)
                                         rowSpacing: Style.space(6)
 
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Oxidation States: " + root.fmt(root.currentElement.oxidation)
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Electronegativity: " + root.fmt(root.currentElement.electronegativity, "(Pauling)")
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• 1st Ionization Energy: " + root.fmt(root.currentElement.ionization, "kJ/mol")
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Van der Waals Radius: " + root.fmt(root.currentElement.radius, "pm")
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Melting Point: " + root.fmt(root.currentElement.meltK, "K")
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Boiling Point: " + root.fmt(root.currentElement.boilK, "K")
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Bohr Shells (K..Q): " + root.shellsText(root.currentElement, " · ")
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Electron Config: " + root.fmt(root.currentElement.config)
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Density: " + root.densityText(root.currentElement)
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
-                                        }
-                                        Text {
-                                            width: Math.floor((parent.width - 2 * parent.columnSpacing) / 3)
-                                            wrapMode: Text.Wrap
-                                            text: "• Discovered: " + root.fmt(root.currentElement.yearDiscovered)
-                                            color: root.textColor
-                                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                                            font.pixelSize: 12
+                                        Repeater {
+                                            model: root.detailSpecs(root.currentElement)
+                                            delegate: Text {
+                                                width: Math.floor((specsGrid.width - 2 * specsGrid.columnSpacing) / 3)
+                                                wrapMode: Text.Wrap
+                                                text: modelData
+                                                color: root.textColor
+                                                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                                                font.pixelSize: 12
+                                            }
                                         }
                                     }
 
@@ -912,7 +861,8 @@ Ac-Lr"
 
                                     Text {
                                         width: parent.width
-                                        text: "Sources: IUPAC 2024 · PubChem · NIST"
+                                        text: (root.detailSpecs(root.currentElement).length < 10 ? "Unmeasured properties omitted · " : "")
+                                              + "Sources: IUPAC 2024 · PubChem · NIST"
                                         color: root.mutedText
                                         font.family: root.bar ? root.bar.fontFamily : Style.font.family
                                         font.pixelSize: 10
